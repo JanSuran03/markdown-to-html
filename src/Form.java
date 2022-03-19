@@ -49,12 +49,10 @@ public class Form extends JFrame {
 
         // save file selection sonfirmed
         saveHTMLDialog.addActionListener(actionEvent -> {
-            String text = markdownHTML.getText();
-            System.out.println(text);
             try {
                 File selectedFile = saveHTMLDialog.getSelectedFile();
                 FileWriter fileWriter = new FileWriter(selectedFile);
-                fileWriter.write(text);
+                fileWriter.write(markdownHTML.getText());
                 fileWriter.flush();
                 fileWriter.close();
                 System.out.println("File saved successfully: " + selectedFile.getAbsolutePath().toString());

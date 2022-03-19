@@ -1,23 +1,16 @@
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Stack;
 
 public class Parser {
     public static String parseHTML(String markdown) throws IOException {
         return parseHTML(new StringBuilder(), new StringReader(markdown));
     }
 
-    static void closeTags(StringBuilder sb, boolean strikeThrough, boolean bold, boolean monospace,
-                          boolean italic, boolean paragraph) {
-        if (strikeThrough)
-            sb.append("</strike>");
-        if (bold)
-            sb.append("</strong>");
-        if (monospace)
-            sb.append("</code>");
-        if (italic)
-            sb.append("</em>");
-        if (paragraph)
-            sb.append("</p>");
+    static void closeTags(StringBuilder sb, Stack<String> closingTags) {
+        while (!closingTags.isEmpty()) {
+            sb.append("</").append(closingTags.pop()).append(">");
+        }
     }
 
     static String parseHTML(StringBuilder sb, StringReader sr) throws IOException {
@@ -26,9 +19,10 @@ public class Parser {
         boolean monospace = false;
         boolean italic = false;
         boolean paragraph = false;
-        int ch = -1;
+        int ch;
         int ch2;
         int ch3;
+        Stack<String> openTags = new Stack<>();
         Integer lastch = null;
         for (; ; ) {
             if (lastch != null) {
@@ -39,20 +33,23 @@ public class Parser {
             switch (ch) {
                 // read ended
                 case -1:
-                    closeTags(sb, strikeThrough, bold, monospace, italic, paragraph);
+                    closeTags(sb, openTags);
                     return sb.toString();
                 // strikethrough
                 case '~':
                     ch2 = sr.read();
                     if (ch2 == '~') {
-                        if (strikeThrough)
+                        if (strikeThrough) {
                             sb.append("</strike>");
-                        else
+                            openTags.pop();
+                        } else {
                             sb.append("<strike>");
+                            openTags.push("strike");
+                        }
                         strikeThrough = !strikeThrough;
                     } else if (ch2 == -1) {
                         sb.append('~');
-                        closeTags(sb, strikeThrough, bold, monospace, italic, paragraph);
+                        closeTags(sb, openTags);
                         return sb.toString();
                     } else {
                         sb.append('~').append((char) ch2);
@@ -64,13 +61,16 @@ public class Parser {
                     switch (ch2) {
                         case -1:
                             sb.append('*');
-                            closeTags(sb, strikeThrough, bold, monospace, italic, paragraph);
+                            closeTags(sb, openTags);
                             return sb.toString();
                         case '*':
-                            if (bold)
+                            if (bold) {
                                 sb.append("</strong>");
-                            else
+                                openTags.pop();
+                            } else {
                                 sb.append("<strong>");
+                                openTags.push("strong");
+                            }
                             bold = !bold;
                             break;
                         default:
@@ -80,18 +80,24 @@ public class Parser {
                     break;
                 // italic
                 case '_':
-                    if (italic)
+                    if (italic) {
                         sb.append("</em>");
-                    else
+                        openTags.pop();
+                    } else {
                         sb.append("<em>");
+                        openTags.push("em");
+                    }
                     italic = !italic;
                     break;
                 // monospace
                 case '`':
-                    if (monospace)
+                    if (monospace) {
                         sb.append("</code>");
-                    else
+                        openTags.pop();
+                    } else {
                         sb.append("<code>");
+                        openTags.push("code");
+                    }
                     monospace = !monospace;
                     break;
                 // horizontal rule
@@ -100,18 +106,19 @@ public class Parser {
                     switch (ch2) {
                         case -1:
                             sb.append('-');
-                            closeTags(sb, strikeThrough, bold, monospace, italic, paragraph);
+                            closeTags(sb, openTags);
                             return sb.toString();
                         case '-':
                             ch3 = sr.read();
                             switch (ch3) {
                                 case -1:
                                     sb.append("--");
-                                    closeTags(sb, strikeThrough, bold, monospace, italic, paragraph);
+                                    closeTags(sb, openTags);
                                     return sb.toString();
                                 case ('-'):
                                     if (paragraph) {
                                         sb.append("</p>");
+                                        openTags.pop();
                                         paragraph = false;
                                     }
                                     sb.append("<hr />");
@@ -160,7 +167,7 @@ public class Parser {
                     switch (ch2) {
                         case -1:
                             sb.append(' ');
-                            closeTags(sb, strikeThrough, bold, monospace, italic, paragraph);
+                            closeTags(sb, openTags);
                             return sb.toString();
                         case ' ':
                             sb.append("<br>");
@@ -178,6 +185,7 @@ public class Parser {
                         if (ch2 == '\n' || ch2 == '\r') {
                             if (paragraph) {
                                 sb.append("</p>");
+                                openTags.pop();
                                 paragraph = false;
                             } else {
                                 sb.append((char) ch);
@@ -187,9 +195,10 @@ public class Parser {
                             sb.append((char) ch);
                         lastch = ch2;
                     } else {
-                        if (!paragraph)
+                        if (!paragraph) {
                             sb.append("<p>").append((char) ch);
-                        else
+                            openTags.push("p");
+                        } else
                             sb.append((char) ch);
                         paragraph = true;
 

@@ -1,6 +1,7 @@
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.io.File;
 
 public class SaveHTMLDialog extends JFileChooser {
     public SaveHTMLDialog() {
@@ -12,5 +13,7 @@ public class SaveHTMLDialog extends JFileChooser {
         addChoosableFileFilter(asHTML);
         addChoosableFileFilter(asTxt);
         setFileFilter(asHTML);
+        File currentDir = new File(".");
+        setCurrentDirectory(currentDir);
     }
 }
