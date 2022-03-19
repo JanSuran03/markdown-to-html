@@ -9,7 +9,7 @@ public class Parser {
     static void closeTags(StringBuilder sb, boolean strikeThrough, boolean bold, boolean monospace,
                           boolean italic, boolean paragraph) {
         if (strikeThrough)
-            sb.append("</strike");
+            sb.append("</strike>");
         if (bold)
             sb.append("</strong>");
         if (monospace)
